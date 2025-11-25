@@ -1,7 +1,6 @@
-// src/pages/EditUserPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api'; // Import gateway
 import Window from '../components/Window';
 import '../App.css';
 
@@ -10,21 +9,22 @@ function EditUserPage() {
   const { username } = useParams();
   const [formData, setFormData] = useState({
     username: '',
-    password: '',
+    password: '', // Note: In a real app, we usually don't send back the password hash
     name: '',
-    role: 'user', // Default 'user' selagi loading
+    role: 'user',
     pdfUrl: '',
   });
   const [file, setFile] = useState(null);
 
   useEffect(() => {
-    axios.get(`http://localhost:4000/api/users/${username}`)
+    // GET user data
+    api.get(`/users/${username}`)
       .then(response => {
         setFormData(response.data);
       })
       .catch(error => {
-        console.error('Gagal mengambil data user:', error);
-        alert('User tidak ditemukan');
+        console.error('User fetch error:', error);
+        alert('User not found');
         navigate('/settings');
       });
   }, [username, navigate]);
@@ -37,36 +37,40 @@ function EditUserPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const { name, password, role } = formData;
-    axios.put(`http://localhost:4000/api/users/${username}`, { name, password, role })
+    
+    // UPDATE user data
+    api.put(`/users/${username}`, { name, password, role })
       .then(() => {
-        alert('User berhasil diupdate!');
+        alert('User updated successfully!');
         navigate('/settings');
       })
       .catch(error => {
-        console.error('Gagal mengupdate user:', error);
-        alert('Gagal mengupdate user: ' + (error.response?.data?.message || error.message));
+        alert('Update failed: ' + (error.response?.data?.message || error.message));
       });
   };
 
   const handlePdfUpload = () => {
-    // ... (Fungsi ini tidak berubah) ...
     if (!file) {
-      alert('Pilih file PDF terlebih dahulu');
+      alert('Please select a PDF file first');
       return;
     }
+    
     const uploadData = new FormData();
     uploadData.append('pdf-file', file);
-    axios.post(`http://localhost:4000/api/users/${username}/upload-pdf`, uploadData, {
+
+    // UPLOAD PDF
+    // We must override the 'Content-Type' for file uploads
+    api.post(`/users/${username}/upload-pdf`, uploadData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     .then(response => {
-      alert('PDF berhasil di-upload!');
+      alert('PDF uploaded successfully!');
       setFormData(prev => ({ ...prev, pdfUrl: response.data.url }));
       setFile(null);
     })
     .catch(error => {
-      console.error('Gagal upload PDF:', error);
-      alert('Gagal upload PDF: ' + (error.response?.data?.message || error.message));
+      console.error('Upload failed:', error);
+      alert('Upload failed: ' + (error.response?.data?.message || error.message));
     });
   };
 
@@ -82,6 +86,7 @@ function EditUserPage() {
           <label>Username</label>
           <input name="username" value={formData.username} readOnly disabled />
         </div>
+        {/* Ideally, password change should be a separate process, but keeping it here for now */}
         <div className="form-group">
           <label>Password</label>
           <input type="password" name="password" value={formData.password} onChange={handleChange} />
@@ -92,17 +97,13 @@ function EditUserPage() {
         </div>
         <div className="form-group">
           <label>Roles</label>
-          
-          {/* ATURAN #2: Ubah opsi select */}
           <select name="role" value={formData.role} onChange={handleChange}>
             <option value="user">user</option>
             <option value="admin">admin</option>
-            {/* Opsi 'Developer' dihapus */}
           </select>
         </div>
       </form>
 
-      {/* Bagian Upload PDF (Tidak berubah) */}
       <div className="pdf-upload-section">
         <hr />
         <h4>Manage PDF</h4>

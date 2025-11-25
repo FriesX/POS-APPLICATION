@@ -1,6 +1,9 @@
 // ===========================================
-// IMPOR & KONFIGURASI
+// 1. IMPORTS & CONFIGURATION
 // ===========================================
+// CRITICAL: This must be the very first line!
+require('dotenv').config(); 
+
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -8,54 +11,55 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 
 const app = express();
-const PORT = 4000;
+// Use the PORT from .env, or fallback to 4000
+const PORT = process.env.PORT || 4000;
 
-// Ganti dengan kredensial Anda!
-const MONGO_URI = 'mongodb+srv://fries_user:Proxxys_120804@cluster0.7gitt3q.mongodb.net/POS_BREAD_WEB?retryWrites=true&w=majority&appName=Cluster0';
-const CLOUDINARY_CLOUD_NAME = 'doyo1dmam';
-const CLOUDINARY_API_KEY = '131242345393254';
-const CLOUDINARY_API_SECRET = 'JOx0T80zWQR6c-hCQSdKxdfyccw';
+// SAFETY CHECK: Ensure keys exist before starting
+if (!process.env.MONGO_URI || !process.env.CLOUDINARY_API_KEY) {
+  console.error('❌ FATAL ERROR: Missing .env variables.');
+  console.error('Please make sure you created the .env file with MONGO_URI and CLOUDINARY keys.');
+  process.exit(1); // Stop the server if config is missing
+}
 
 // ===========================================
-// MIDDLEWARE
+// 2. MIDDLEWARE
 // ===========================================
-app.use(cors()); // Izinkan koneksi dari React
-app.use(express.json()); // Izinkan server membaca JSON
+app.use(cors()); // Allow React Frontend to connect
+app.use(express.json()); // Allow reading JSON body
 
-// Konfigurasi Cloudinary
+// Cloudinary Config (Using .env variables)
 cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Konfigurasi Multer untuk menangani upload file di memori
+// Multer Config (Memory Storage for PDF handling)
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // ===========================================
-// KONEKSI DATABASE
+// 3. DATABASE CONNECTION
 // ===========================================
-mongoose.connect(MONGO_URI)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('🚀 Berhasil terhubung ke MongoDB Atlas');
-    // JALANKAN FUNGSI UNTUK MEMBUAT ADMIN DEFAULT
+    console.log('✅ Connected to MongoDB Atlas');
     seedAdminUser(); 
   })
-  .catch(err => console.error('Gagal terhubung ke MongoDB:', err));
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // ===========================================
-// SKEMA & MODEL DATABASE
+// 4. DATABASE MODELS
 // ===========================================
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  password: { type: String, required: true },
+  password: { type: String, required: true }, // Plain text for now (will fix later)
   role: { 
     type: String, 
     required: true, 
-    enum: ['user', 'admin'], // ATURAN #2: Hanya 'user' dan 'admin'
-    default: 'user'           // ATURAN #1: Default 'user'
+    enum: ['user', 'admin'], 
+    default: 'user' 
   },
   pdfUrl: { type: String },
   pdfPublicId: { type: String },
@@ -63,41 +67,34 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema, 'user_accounts');
 
-// ===========================================
-// FUNGSI SEED ADMIN (ATURAN #3)
-// ===========================================
+// Seeding Function (Safe Version)
 const seedAdminUser = async () => {
   try {
-    // 1. Cek apakah sudah ada user dengan role 'admin'
     const adminExists = await User.findOne({ role: 'admin' });
-
-    // 2. Jika tidak ada, buat satu
     if (!adminExists) {
-      console.log('Tidak ditemukan admin, membuat admin default...');
+      console.log('Admin not found. Creating default admin...');
       const defaultAdmin = new User({
         username: 'admin',
-        name: 'Admin Awal',
-        password: 'admin', // Ganti password ini di production!
+        name: 'System Administrator',
+        // Uses password from .env, or defaults to 'admin'
+        password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin', 
         role: 'admin',
       });
       await defaultAdmin.save();
-      console.log('Admin default berhasil dibuat dengan username: admin, password: admin');
+      console.log('✅ Default admin created successfully.');
     } else {
-      console.log('User admin sudah ada di database.');
+      console.log('ℹ️ Admin account already exists.');
     }
   } catch (error) {
-    console.error('Error saat seeding admin user:', error);
+    console.error('Seed Error:', error);
   }
 };
 
-
 // ===========================================
-// API ENDPOINTS (RUTE)
-// (Semua endpoint di bawah ini tidak perlu diubah,
-// karena validasi sudah ditangani oleh Schema)
+// 5. API ROUTES
 // ===========================================
 
-// --- 1. LOGIN ---
+// --- LOGIN ---
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -110,169 +107,120 @@ app.post('/api/login', async (req, res) => {
         role: user.role,
       });
     } else {
-      res.status(401).json({ message: 'Username atau password salah' });
+      res.status(401).json({ message: 'Invalid credentials' });
     }
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// --- 2. GET ALL USERS ---
+// --- GET ALL USERS ---
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await User.find({}, '-password');
-    const usersForClient = users.map(u => ({
-      username: u.username,
-      name: u.name,
-      role: u.role,
-      passwordDisplay: '••••••••',
-    }));
-    res.json(usersForClient);
+    const users = await User.find({}, '-password'); // Hide password
+    res.json(users);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// --- 3. CREATE NEW USER ---
+// --- CREATE USER ---
 app.post('/api/users', async (req, res) => {
   try {
     const { username, name, password, role } = req.body;
     const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Username sudah digunakan' });
-    }
-    // Schema akan otomatis memvalidasi role & set default jika tidak ada
-    const newUser = new User({ username, name, password, role }); 
+    if (existingUser) return res.status(400).json({ message: 'Username already taken' });
+
+    const newUser = new User({ username, name, password, role });
     await newUser.save();
     res.status(201).json(newUser);
   } catch (err) {
-    // Jika error validasi (misal: role selain 'user'/'admin')
-    if (err.name === 'ValidationError') {
-      return res.status(400).json({ message: err.message });
-    }
-    res.status(500).json({ message: 'Server error' });
+    res.status(400).json({ message: err.message });
   }
 });
 
-// --- 4. GET ONE USER ---
+// --- GET ONE USER ---
 app.get('/api/users/:username', async (req, res) => {
   try {
-    const { username } = req.params;
-    const user = await User.findOne({ username });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: 'User tidak ditemukan' });
-    }
+    const user = await User.findOne({ username: req.params.username });
+    user ? res.json(user) : res.status(404).json({ message: 'User not found' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// --- 5. UPDATE USER ---
+// --- UPDATE USER ---
 app.put('/api/users/:username', async (req, res) => {
   try {
-    const { username } = req.params;
     const { name, password, role } = req.body;
-
     const updatedUser = await User.findOneAndUpdate(
-      { username: username },
-      { name, password, role }, // Schema akan memvalidasi role
-      { new: true, runValidators: true } // 'runValidators' penting untuk update
+      { username: req.params.username },
+      { name, password, role },
+      { new: true, runValidators: true }
     );
-
-    if (updatedUser) {
-      res.json({ message: 'User berhasil diupdate' });
-    } else {
-      res.status(404).json({ message: 'User tidak ditemukan' });
-    }
+    updatedUser ? res.json({ message: 'User updated' }) : res.status(404).json({ message: 'User not found' });
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      return res.status(400).json({ message: err.message });
-    }
-    res.status(500).json({ message: 'Server error' });
+    res.status(400).json({ message: err.message });
   }
 });
 
+// --- DELETE USER ---
 app.delete('/api/users/:username', async (req, res) => {
   try {
     const { username } = req.params;
+    if (username === 'admin') return res.status(403).json({ message: 'Cannot delete default admin' });
 
-    // Tambahkan pengaman agar admin default tidak bisa dihapus
-    if (username === 'admin') {
-      return res.status(403).json({ message: 'Admin default tidak dapat dihapus.' });
-    }
-
-    const userToDelete = await User.findOneAndDelete({ username: username });
-
+    const userToDelete = await User.findOneAndDelete({ username });
     if (userToDelete) {
-      // Jika user punya PDF, hapus juga dari Cloudinary
       if (userToDelete.pdfPublicId) {
         await cloudinary.uploader.destroy(userToDelete.pdfPublicId, { resource_type: 'raw' });
       }
-      res.json({ message: `User ${username} berhasil dihapus.` });
+      res.json({ message: 'User deleted' });
     } else {
-      res.status(404).json({ message: 'User tidak ditemukan.' });
+      res.status(404).json({ message: 'User not found' });
     }
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// --- 6. UPLOAD/UPDATE PDF ---
+// --- PDF UPLOAD ---
 app.post('/api/users/:username/upload-pdf', upload.single('pdf-file'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'Tidak ada file yang di-upload' });
-    }
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
-    const { username } = req.params;
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User tidak ditemukan' });
-    }
-
-    // Jika user sudah punya PDF, hapus yang lama dari Cloudinary
+    // Delete old PDF if exists
     if (user.pdfPublicId) {
       await cloudinary.uploader.destroy(user.pdfPublicId, { resource_type: 'raw' });
     }
 
-    // Upload file baru ke Cloudinary
+    // Upload new PDF
     const uploadStream = cloudinary.uploader.upload_stream(
-      { resource_type: 'raw', folder: 'user-pdfs' }, // 'raw' untuk PDF
+      { resource_type: 'raw', folder: 'user-pdfs' },
       async (error, result) => {
         if (error) {
-          console.error('Gagal upload ke Cloudinary:', error);
-          return res.status(500).json({ message: 'Upload gagal' });
+            console.error(error);
+            return res.status(500).json({ message: 'Cloudinary Upload Failed' });
         }
         
-        // Simpan URL dan ID file baru ke database
         user.pdfUrl = result.secure_url;
         user.pdfPublicId = result.public_id;
         await user.save();
-        
-        res.json({ 
-          message: 'File berhasil di-upload!', 
-          url: result.secure_url 
-        });
+        res.json({ message: 'Upload successful', url: result.secure_url });
       }
     );
-    
-    // Kirim buffer file ke stream Cloudinary
     uploadStream.end(req.file.buffer);
-
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-
 // ===========================================
-// JALANKAN SERVER
+// 6. SERVER START
 // ===========================================
 app.listen(PORT, () => {
-  console.log(`🚀 Server backend berjalan di http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

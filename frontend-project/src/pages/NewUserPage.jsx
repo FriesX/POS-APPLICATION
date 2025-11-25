@@ -1,19 +1,16 @@
-// src/pages/NewUserPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api'; // Import gateway
 import Window from '../components/Window';
 import '../App.css';
 
 function NewUserPage() {
   const navigate = useNavigate();
-  
-  // ATURAN #1: Set 'role' default ke 'user'
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     name: '',
-    role: 'user', // Diubah dari 'Normal'
+    role: 'user', 
   });
 
   const handleChange = (e) => {
@@ -21,17 +18,17 @@ function NewUserPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    axios.post('http://localhost:4000/api/users', formData)
-      .then(() => {
-        alert('User baru berhasil dibuat!');
-        navigate('/settings'); // Kembali ke halaman settings
-      })
-      .catch(error => {
-        console.error('Gagal membuat user:', error);
-        alert('Gagal membuat user: ' + (error.response?.data?.message || error.message));
-      });
+    try {
+      // CLEAN CODE: sending data to /users
+      await api.post('/users', formData);
+      alert('User successfully created!');
+      navigate('/settings');
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      alert('Error: ' + (error.response?.data?.message || error.message));
+    }
   };
 
   return (
@@ -56,12 +53,9 @@ function NewUserPage() {
         </div>
         <div className="form-group">
           <label>Roles</label>
-          
-          {/* ATURAN #2: Ubah opsi select */}
           <select name="role" value={formData.role} onChange={handleChange}>
             <option value="user">user</option>
             <option value="admin">admin</option>
-            {/* Opsi 'Developer' dihapus */}
           </select>
         </div>
       </form>
