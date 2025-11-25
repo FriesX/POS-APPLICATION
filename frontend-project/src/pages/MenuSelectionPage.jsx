@@ -18,7 +18,10 @@ function MenuSelectionPage({ user, onLogout }) {
         {isAdmin && (
           <>
             <button>Accounting</button>
-            <button>Inventory</button>
+
+            <Link to="/inventory" className="button-link">
+              Inventory
+            </Link>
             
             <Link to="/settings" className="button-link">
               Settings

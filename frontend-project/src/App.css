@@ -211,3 +211,35 @@ button:disabled {
   gap: 8px;              
   align-items: center;   
 }
+
+/* Inventory Layouts */
+.inventory-controls {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #ccc;
+  border-bottom: 2px solid #999;
+}
+
+.table-container {
+  padding: 10px;
+  background: white; /* Or keep transparent if you want Window bg */
+  height: 100%;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: monospace;
+}
+
+.data-table th, .data-table td {
+  border: 1px solid #000;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #000080; /* Dark Blue header like Windows 95/98 */
+  color: white;
+}

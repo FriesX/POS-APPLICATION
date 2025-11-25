@@ -219,6 +219,71 @@ app.post('/api/users/:username/upload-pdf', upload.single('pdf-file'), async (re
 });
 
 // ===========================================
+// INVENTORY: RAW MATERIALS SCHEMA
+// ===========================================
+const rawMaterialSchema = new mongoose.Schema({
+  itemCode: { type: String, required: true, unique: true }, // e.g., RM001
+  itemName: { type: String, required: true },
+  stock: { type: Number, default: 0 },
+  unit: { type: String, required: true }, // e.g., kg, pcs, liter
+  minStock: { type: Number, default: 10 }, // Threshold for 'Low Stock' status
+});
+
+const RawMaterial = mongoose.model('RawMaterial', rawMaterialSchema);
+
+// ===========================================
+// INVENTORY: API ROUTES
+// ===========================================
+
+// 1. GET ALL RAW MATERIALS
+app.get('/api/raw-materials', async (req, res) => {
+  try {
+    const materials = await RawMaterial.find().sort({ itemCode: 1 });
+    res.json(materials);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 2. CREATE NEW RAW MATERIAL (Auto-Generate RM Code)
+app.post('/api/raw-materials', async (req, res) => {
+  try {
+    const { itemName, unit, stock } = req.body;
+
+    // A. FIND LAST CODE
+    // We sort by _id descending to get the newest entry
+    const lastMaterial = await RawMaterial.findOne().sort({ _id: -1 });
+
+    let newCode = 'RM001'; // Default if database is empty
+
+    if (lastMaterial && lastMaterial.itemCode) {
+      // Extract the number part (e.g., from 'RM005' get '005')
+      const lastCodeStr = lastMaterial.itemCode.replace('RM', '');
+      const lastNumber = parseInt(lastCodeStr, 10);
+      
+      // Increment and pad with zeros (e.g., 6 -> '006')
+      const nextNumber = lastNumber + 1;
+      newCode = `RM${String(nextNumber).padStart(3, '0')}`;
+    }
+
+    // B. SAVE NEW MATERIAL
+    const newMaterial = new RawMaterial({
+      itemCode: newCode,
+      itemName,
+      unit,
+      stock: stock || 0 // Default to 0 if not provided
+    });
+
+    await newMaterial.save();
+    res.status(201).json(newMaterial);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to create material' });
+  }
+});
+
+// ===========================================
 // 6. SERVER START
 // ===========================================
 app.listen(PORT, () => {
