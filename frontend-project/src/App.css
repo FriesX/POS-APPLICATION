@@ -1,245 +1,314 @@
-/* Reset & Background */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background-color: #423c3c;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
+/* =========================================
+   1. ANIMATIONS & VARIABLES
+   ========================================= */
+:root {
+  /* Vibrant Palette */
+  --primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  --primary-shadow: rgba(37, 99, 235, 0.3);
+  
+  --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  
+  --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+
+  --radius-lg: 16px;
+  --radius-sm: 8px;
 }
 
-/* Wrapper 'Window' */
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text-main);
+  min-height: 100vh;
+  /* Centering Logic */
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+/* =========================================
+   2. THE WINDOW (Card Layout)
+   ========================================= */
 .window {
-  background: #ffffff;
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 450px;
-  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px); /* Glass effect */
+  width: 100%;
+  max-width: 950px;
+  height: auto;
+  max-height: 90vh; /* Prevents it from going off-screen */
+  
+  border-radius: var(--radius-lg);
+  border: 1px solid white;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  display: flex;
+  flex-direction: column;
+  
+  /* Animation entry */
+  animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .window-titlebar {
-  background-color: #272020;
-  padding: 8px 12px;
-  border-bottom: 1px solid #ccc;
-  font-weight: bold;
+  background: var(--primary-gradient);
+  color: white;
+  padding: 16px 24px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.window-controls {
-  font-family: 'Segoe UI Symbol';
-  display: flex;
-  gap: 8px;
-  opacity: 0.5;
 }
 
 .window-content {
   padding: 24px;
-}
-
-/* Grup Form */
-.form-group {
+  overflow-y: auto; /* Internal scrollbar if content is too long */
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 20px;
+}
+
+/* Custom Scrollbar */
+.window-content::-webkit-scrollbar {
+  width: 8px;
+}
+.window-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.window-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.window-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* =========================================
+   3. INTERACTIVE BUTTONS
+   ========================================= */
+button {
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 6px -1px var(--primary-shadow);
+  
+  /* Interaction transitions */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+button:hover {
+  transform: translateY(-2px); /* Lift effect */
+  box-shadow: 0 10px 15px -3px var(--primary-shadow);
+  filter: brightness(1.1);
+}
+
+button:active {
+  transform: translateY(1px); /* Press effect */
+  box-shadow: 0 2px 4px -1px var(--primary-shadow);
+}
+
+/* Back / Cancel Buttons */
+button[type="button"], 
+.inventory-controls button:first-child {
+  background: white;
+  color: var(--text-main);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+button[type="button"]:hover,
+.inventory-controls button:first-child:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+/* Danger Buttons */
+.btn-logout, .btn-danger {
+  background: var(--danger-gradient);
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+}
+
+.btn-logout:hover {
+  box-shadow: 0 10px 15px -3px rgba(220, 38, 38, 0.4);
+}
+
+/* =========================================
+   4. INPUTS WITH GLOW
+   ========================================= */
+.user-form {
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .form-group label {
   font-size: 0.9rem;
-  font-weight: 500;
-  color: #333;
-}
-
-.form-group input,
-.form-group select {
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-  box-sizing: border-box; /* Penting! */
-}
-
-.form-group input:disabled {
-  background-color: #9e8686;
-}
-
-/* Tombol Dasar */
-button {
-  padding: 12px 20px;
-  font-size: 1rem;
-  font-weight: 500;
-  border: 1px solid #000000;
-  background-color: #000000;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-button:hover {
-  background-color: #e0e0e0;
-  border-color: #bbb;
-}
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Tombol Login */
-.btn-login {
-  background-color: #0078d4;
-  color: white;
-  border: none;
-  width: 100%;
-}
-.btn-login:hover {
-  background-color: #005a9e;
-}
-
-/* Tombol Logout */
-.btn-logout {
-  margin-top: 16px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  width: 100%;
-}
-.btn-logout:hover {
-  background-color: #d32f2f;
-}
-
-/* Link yang terlihat seperti Tombol */
-.button-link {
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
   display: block;
-  padding: 12px 20px;
-  font-size: 1rem;
-  font-weight: 500;
-  border: 1px solid #000000;
-  background-color: #000000;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  text-decoration: none;
-  color: rgb(255, 255, 255);
-  text-align: center;
-}
-.button-link:hover {
-  background-color: #ffffff;
-  border-color: #bbb;
 }
 
-/* Layout Halaman Menu */
-.menu-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: stretch;
-}
-
-/* Layout Halaman Settings */
-.settings-controls {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.user-table td{
-  color: black;
-}
-
-.user-table {
+input, select {
   width: 100%;
-  border-collapse: collapse;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  background: #f8fafc;
+  transition: all 0.2s ease;
 }
 
-.user-table th, .user-table td {
-  border: 1px solid #000000;
-  padding: 8px;
-  text-align: left;
+input:hover, select:hover {
+  background: white;
+  border-color: #cbd5e1;
 }
 
-.user-table th {
-  background-color: #000000;
+input:focus, select:focus {
+  outline: none;
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); /* Blue glow ring */
+  transform: translateY(-1px);
 }
 
-/* Layout Form User (New/Edit) */
-.user-form .form-controls {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
+input:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  transform: none;
 }
 
-/* Bagian Upload PDF */
-.pdf-upload-section {
-  margin-top: 20px;
-}
-.pdf-upload-section hr {
-  border: none;
-  border-top: 1px solid #eee;
-  margin: 20px 0;
-}
-.pdf-upload-section a {
-  color: #0078d4;
-  text-decoration: none;
-}
-.pdf-upload-section a:hover {
-  text-decoration: underline;
-}
-
-/* Tombol Hapus di Halaman Settings */
-
-.delete-btn {
-  background: none;      
-  border: none;         
-  color: #f44336;        
-  padding: 4px 8px;
-  font-size: 1.2rem;     
-  line-height: 1;
-  cursor: pointer;       
-}
-
-.delete-btn:hover {
-  background-color: #fdecec; 
-}
-
-.actions-cell {
-  display: flex;         
-  gap: 8px;              
-  align-items: center;   
-}
-
-/* Inventory Layouts */
-.inventory-controls {
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  background: #ccc;
-  border-bottom: 2px solid #999;
-}
-
+/* =========================================
+   5. MODERN TABLES
+   ========================================= */
 .table-container {
-  padding: 10px;
-  background: white; /* Or keep transparent if you want Window bg */
-  height: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden; /* Rounds the corners of the table */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: monospace;
-}
-
-.data-table th, .data-table td {
-  border: 1px solid #000;
-  padding: 8px;
-  text-align: left;
+  background: white;
 }
 
 .data-table th {
-  background-color: #000080; /* Dark Blue header like Windows 95/98 */
+  background: #1e293b;
   color: white;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  transition: background 0.1s;
+}
+
+/* Row Hover Effect */
+.data-table tbody tr {
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f0f9ff; /* Light blue tint on hover */
+  transform: scale(1.005); /* Slight zoom on row */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  z-index: 1;
+  position: relative;
+}
+
+/* The Plus Button in Table */
+.data-table button {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 20px; /* Pill shape */
+  background: #10b981; /* Emerald Green */
+  box-shadow: none;
+  margin-right: 8px;
+}
+.data-table button:hover {
+  background: #059669;
+  transform: scale(1.1);
+}
+
+/* =========================================
+   6. STATS & MENUS
+   ========================================= */
+.menu-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.menu-container button {
+  height: 120px; /* Big Menu Buttons */
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: var(--text-main);
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.menu-container button:hover {
+  border-color: #3b82f6;
+  color: #2563eb;
+  background: #eff6ff;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.15);
+}
+
+.stats-header {
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
+  padding: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.inventory-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }

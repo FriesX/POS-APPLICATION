@@ -19,13 +19,13 @@ function MenuSelectionPage({ user, onLogout }) {
           <>
             <button>Accounting</button>
 
-            <Link to="/inventory" className="button-link">
+            <button onClick={() => navigate('/inventory')}>
               Inventory
-            </Link>
+            </button>
             
-            <Link to="/settings" className="button-link">
+            <button onClick={() => navigate('/settings')}>
               Settings
-            </Link>
+            </button>
           </>
         )}
 
