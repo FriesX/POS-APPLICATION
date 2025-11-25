@@ -1,26 +1,34 @@
+// src/pages/EditUserPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../api'; // Import gateway
+import api from '../api'; // Using our centralized API
 import Window from '../components/Window';
 import '../App.css';
 
 function EditUserPage() {
   const navigate = useNavigate();
   const { username } = useParams();
+  
+  // CLEANUP: Removed 'pdfUrl' from state as it's no longer used
   const [formData, setFormData] = useState({
     username: '',
-    password: '', // Note: In a real app, we usually don't send back the password hash
+    password: '',
     name: '',
-    role: 'user',
-    pdfUrl: '',
+    role: 'user', 
   });
-  const [file, setFile] = useState(null);
+
+  // CLEANUP: Removed 'file' state (const [file, setFile]...)
 
   useEffect(() => {
-    // GET user data
     api.get(`/users/${username}`)
       .then(response => {
-        setFormData(response.data);
+        // We only grab the fields we care about now
+        setFormData({
+            username: response.data.username,
+            password: response.data.password, 
+            name: response.data.name,
+            role: response.data.role
+        });
       })
       .catch(error => {
         console.error('User fetch error:', error);
@@ -38,41 +46,18 @@ function EditUserPage() {
     e.preventDefault();
     const { name, password, role } = formData;
     
-    // UPDATE user data
     api.put(`/users/${username}`, { name, password, role })
       .then(() => {
         alert('User updated successfully!');
         navigate('/settings');
       })
       .catch(error => {
+        console.error('Update failed:', error);
         alert('Update failed: ' + (error.response?.data?.message || error.message));
       });
   };
 
-  const handlePdfUpload = () => {
-    if (!file) {
-      alert('Please select a PDF file first');
-      return;
-    }
-    
-    const uploadData = new FormData();
-    uploadData.append('pdf-file', file);
-
-    // UPLOAD PDF
-    // We must override the 'Content-Type' for file uploads
-    api.post(`/users/${username}/upload-pdf`, uploadData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then(response => {
-      alert('PDF uploaded successfully!');
-      setFormData(prev => ({ ...prev, pdfUrl: response.data.url }));
-      setFile(null);
-    })
-    .catch(error => {
-      console.error('Upload failed:', error);
-      alert('Upload failed: ' + (error.response?.data?.message || error.message));
-    });
-  };
+  // CLEANUP: Removed 'handlePdfUpload' function completely
 
   return (
     <Window title="Edit User">
@@ -86,7 +71,6 @@ function EditUserPage() {
           <label>Username</label>
           <input name="username" value={formData.username} readOnly disabled />
         </div>
-        {/* Ideally, password change should be a separate process, but keeping it here for now */}
         <div className="form-group">
           <label>Password</label>
           <input type="password" name="password" value={formData.password} onChange={handleChange} />
@@ -103,30 +87,7 @@ function EditUserPage() {
           </select>
         </div>
       </form>
-
-      <div className="pdf-upload-section">
-        <hr />
-        <h4>Manage PDF</h4>
-        {formData.pdfUrl && (
-          <div className="form-group">
-            <label>Current PDF:</label>
-            <a href={formData.pdfUrl} target="_blank" rel="noopener noreferrer">
-              View/Download PDF
-            </a>
-          </div>
-        )}
-        <div className="form-group">
-          <label>{formData.pdfUrl ? 'Upload New (Replace)' : 'Upload PDF'}</label>
-          <input 
-            type="file" 
-            accept=".pdf" 
-            onChange={(e) => setFile(e.target.files[0])} 
-          />
-        </div>
-        <button onClick={handlePdfUpload} disabled={!file}>
-          Upload PDF
-        </button>
-      </div>
+      {/* CLEANUP: The PDF Upload section <div className="pdf-upload-section"> is gone */}
     </Window>
   );
 }

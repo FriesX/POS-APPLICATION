@@ -5,21 +5,25 @@ import Window from '../components/Window';
 import '../App.css';
 
 function MenuSelectionPage({ user, onLogout }) {
-  // Logika disederhanakan: hanya cek 'admin'
+  // Check if the user is an admin
   const isAdmin = user.role === 'admin';
 
   return (
     <Window title="Menu Selection">
       <div className="menu-container">
+        {/* 1. EVERYONE can access Sales */}
         <button>Sales</button>
-        <button>Accounting</button>
-        <button>Inventory</button>
 
-        {/* Render kondisional berdasarkan 'isAdmin' */}
+        {/* 2. ONLY ADMINS can access these menus */}
         {isAdmin && (
-          <Link to="/settings" className="button-link">
-            Settings
-          </Link>
+          <>
+            <button>Accounting</button>
+            <button>Inventory</button>
+            
+            <Link to="/settings" className="button-link">
+              Settings
+            </Link>
+          </>
         )}
 
         <button className="btn-logout" onClick={onLogout}>
