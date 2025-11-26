@@ -231,6 +231,87 @@ const rawMaterialSchema = new mongoose.Schema({
 
 const RawMaterial = mongoose.model('RawMaterial', rawMaterialSchema);
 
+
+// ===========================================
+// INVENTORY: PURCHASE SCHEMA
+// ===========================================
+const purchaseSchema = new mongoose.Schema({
+  parentItemCode: { type: String, required: true }, // Links to RM001
+  purchaseCode: { type: String, required: true },   // RM001_001
+  date: { type: Date, default: Date.now },
+  qty: { type: Number, required: true },
+  priceTotal: { type: Number, required: true },     // Total price for this batch
+  vendor: { type: String, default: '-' }
+});
+
+const Purchase = mongoose.model('Purchase', purchaseSchema);
+
+// ===========================================
+// PURCHASE: API ROUTES
+// ===========================================
+
+// 1. GET HISTORY FOR SPECIFIC MATERIAL
+app.get('/api/raw-materials/:itemCode/purchases', async (req, res) => {
+  try {
+    const { itemCode } = req.params;
+    const purchases = await Purchase.find({ parentItemCode: itemCode }).sort({ purchaseCode: 1 });
+    res.json(purchases);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 2. ADD NEW PURCHASE (Auto-Increment _001 Logic)
+app.post('/api/raw-materials/:itemCode/purchases', async (req, res) => {
+  try {
+    const { itemCode } = req.params;
+    const { qty, priceTotal, vendor } = req.body;
+
+    // A. FIND PARENT MATERIAL
+    const material = await RawMaterial.findOne({ itemCode });
+    if (!material) return res.status(404).json({ message: 'Material not found' });
+
+    // B. GENERATE ID (RM001_001, RM001_002...)
+    // Find the last purchase for THIS specific material
+    const lastPurchase = await Purchase.findOne({ parentItemCode: itemCode })
+      .sort({ purchaseCode: -1 }); // Get the latest one
+
+    let nextSuffix = '001';
+    
+    if (lastPurchase) {
+      // Split "RM001_005" -> ["RM001", "005"]
+      const parts = lastPurchase.purchaseCode.split('_');
+      if (parts.length === 2) {
+        const lastNum = parseInt(parts[1], 10);
+        nextSuffix = String(lastNum + 1).padStart(3, '0');
+      }
+    }
+
+    const newPurchaseCode = `${itemCode}_${nextSuffix}`;
+
+    // C. SAVE PURCHASE
+    const newPurchase = new Purchase({
+      parentItemCode: itemCode,
+      purchaseCode: newPurchaseCode,
+      qty,
+      priceTotal,
+      vendor
+    });
+    await newPurchase.save();
+
+    // D. UPDATE PARENT MATERIAL STOCK (Optional: Add bought qty to stock)
+    material.stock += parseInt(qty, 10);
+    await material.save();
+
+    res.status(201).json(newPurchase);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to add purchase' });
+  }
+});
+
+
 // ===========================================
 // INVENTORY: API ROUTES
 // ===========================================

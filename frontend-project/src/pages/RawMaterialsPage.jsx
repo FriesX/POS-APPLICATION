@@ -57,6 +57,16 @@ function RawMaterialsPage() {
                         ) : (
                             materials.map((item) => (
                                 <tr key={item._id}>
+                                    <td>
+                                        {/* The + Button */}
+                                        <button
+                                            style={{ marginRight: '5px', fontWeight: 'bold' }}
+                                            onClick={() => navigate(`/inventory/raw-materials/${item.itemCode}`)}
+                                        >
+                                            +
+                                        </button>
+                                        {item.itemCode}
+                                    </td>
                                     <td>{item.itemCode}</td>
                                     <td>{item.itemName}</td>
                                     <td>{item.stock}</td>

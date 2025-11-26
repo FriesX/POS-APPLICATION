@@ -1,42 +1,33 @@
-// src/App.jsx
 import React, { useState } from 'react';
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate
-} from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
+// --- EXISTING PAGES ---
 import LoginPage from './pages/LoginPage';
 import MenuSelectionPage from './pages/MenuSelectionPage';
+
+// --- POTENTIALLY MISSING/BROKEN PAGES ---
+// If any of these files are missing or have errors, the whole app turns white.
+// We will wrap them in a try-catch logic concept, but for now, ensure these imports are correct.
 import SettingsPage from './pages/SettingsPage';
 import NewUserPage from './pages/NewUserPage';
 import EditUserPage from './pages/EditUserPage';
 import InventoryMenuPage from './pages/InventoryMenuPage';
 import RawMaterialsPage from './pages/RawMaterialsPage';
 import NewMaterialPage from './pages/NewMaterialPage';
+import MaterialPurchasePage from './pages/MaterialPurchasePage';
+import NewPurchasePage from './pages/NewPurchasePage';
 
-// Komponen helper untuk melindungi rute
+// --- HELPER COMPONENTS ---
 function ProtectedRoute({ user, children }) {
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  if (!user) return <Navigate to="/" replace />;
   return children;
 }
 
-// Komponen helper untuk rute Admin
 function AdminRoute({ user, children }) {
-  // Logika disederhanakan: hanya cek 'admin'
   const isAdmin = user?.role === 'admin';
-
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-  if (!isAdmin) {
-    // Jika login tapi bukan admin, tendang ke menu
-    return <Navigate to="/menu" replace />;
-  }
+  if (!user) return <Navigate to="/" replace />;
+  if (!isAdmin) return <Navigate to="/menu" replace />;
   return children;
 }
 
@@ -54,15 +45,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* --- RUTE LOGIN --- */}
+        {/* LOGIN */}
         <Route
           path="/"
-          element={
-            user ? <Navigate to="/menu" /> : <LoginPage onLogin={handleLogin} />
-          }
+          element={user ? <Navigate to="/menu" /> : <LoginPage onLogin={handleLogin} />}
         />
 
-        {/* --- RUTE MENU (Protected) --- */}
+        {/* MENU */}
         <Route
           path="/menu"
           element={
@@ -72,7 +61,7 @@ function App() {
           }
         />
 
-        {/* --- RUTE ADMIN (Protected & Admin Only) --- */}
+        {/* SETTINGS (Admin) */}
         <Route
           path="/settings"
           element={
@@ -98,11 +87,36 @@ function App() {
           }
         />
 
-        <Route path="/inventory" element={<InventoryMenuPage />} />
-        <Route path="/inventory/raw-materials" element={<RawMaterialsPage />} />
-        <Route path="/inventory/raw-materials/new" element={<NewMaterialPage />} />
+        {/* INVENTORY (Admin) - FIXED: Passing 'user' prop just in case */}
+        <Route
+          path="/inventory"
+          element={
+            <AdminRoute user={user}>
+              <InventoryMenuPage user={user} />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/inventory/raw-materials"
+          element={
+            <AdminRoute user={user}>
+              <RawMaterialsPage user={user} />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/inventory/raw-materials/new"
+          element={
+            <AdminRoute user={user}>
+              <NewMaterialPage user={user} />
+            </AdminRoute>
+          }
+        />
 
-        {/* Rute cadangan */}
+        <Route path="/inventory/raw-materials/:itemCode" element={<MaterialPurchasePage />} />
+        <Route path="/inventory/raw-materials/:itemCode/new-purchase" element={<NewPurchasePage />} />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
